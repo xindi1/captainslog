@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1b3d">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Narrative Journal</title>
+  <style>
+    :root{
+      --bg: #ffffff;
+      --card: #f6f7fb;
+      --text: #0f172a;
+      --muted:#64748b;
+      --accent:#2563eb;
+      --accent-weak:#e8f0ff;
+      --border:#e5e7eb;
+      --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.06);
+      --radius: 12px;
+      --font: ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    html[data-theme="blue"]{
+      --bg:#0b1b3d;          /* deep blue canvas */
+      --card:#0f244f;
+      --text:#e5edff;
+      --muted:#a5b4fc;
+      --accent:#60a5fa;
+      --accent-weak:#122a63;
+      --border:#1f3a72;
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 6px 18px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:var(--bg); color:var(--text); font-family:var(--font);
+      line-height:1.5;
+    }
+    .wrap{max-width:900px; margin:32px auto; padding:0 16px}
+    header{
+      display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:16px;
+    }
+    .title{font-weight:700; letter-spacing:.2px; font-size:20px}
+    .toolbar{display:flex; gap:8px; flex-wrap:wrap}
+    button, .selectlike{
+      appearance:none; border:1px solid var(--border); background:var(--card); color:var(--text);
+      padding:10px 12px; border-radius:10px; box-shadow:var(--shadow); cursor:pointer; font-weight:600;
+    }
+    button:hover{filter:brightness(1.02)}
+    button.ghost{background:transparent}
+    .card{
+      background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow);
+    }
+    .editor{padding:16px}
+    input[type="text"], textarea{
+      width:100%; border:1px solid var(--border); background:#fff; color:#0f172a;
+      padding:12px 14px; border-radius:10px; font-size:16px;
+    }
+    html[data-theme="blue"] input[type="text"], html[data-theme="blue"] textarea{
+      background:#0b1b3d; color:var(--text); border-color:#284b8a;
+    }
+    textarea{
+      min-height:260px; resize:vertical; font-family:var(--mono); line-height:1.6;
+    }
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+    .grow{flex:1}
+    .muted{color:var(--muted); font-size:12px}
+    .counts{display:flex; gap:12px}
+    .timeline{margin-top:24px; display:flex; flex-direction:column; gap:12px}
+    .entry{padding:14px}
+    .entry h3{margin:0 0 4px 0; font-size:16px}
+    .entry .meta{font-size:12px; color:var(--muted)}
+    .entry .content{white-space:pre-wrap; margin-top:8px}
+    .entry .actions{margin-top:10px; display:flex; gap:8px; flex-wrap:wrap}
+    .tagbox{display:flex; gap:8px; align-items:center}
+    .tagbox input{max-width:260px}
+    .hr{height:1px; background:var(--border); margin:16px 0}
+    .notice{padding:8px 12px; border:1px dashed var(--border); border-radius:10px; font-size:13px}
+
+    /* New: collapsible entry header + collapsed state */
+    .entry-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:8px;
+    }
+    .entry-main{
+      min-width:0;
+    }
+    .collapseBtn{
+      padding:4px 8px;
+      font-size:11px;
+      align-self:flex-start;
+      white-space:nowrap;
+    }
+    .entry.collapsed .content,
+    .entry.collapsed .actions{
+      display:none;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">Narrative Journal</div>
+      <div class="toolbar">
+        <button id="themeBtn" title="Toggle Light / Blue">Theme: Light</button>
+        <button class="ghost" id="expandAll">Expand All</button>
+        <button class="ghost" id="collapseAll">Collapse All</button>
+        <button id="exportAllTxt">Export All (TXT)</button>
+        <button id="exportAllMd">Export All (MD)</button>
+        <button class="ghost" id="printPdf">Print / PDF</button>
+      </div>
+    </header>
+
+    <section class="card editor" aria-label="Editor">
+      <div class="row" style="margin-bottom:8px">
+        <input id="title" type="text" placeholder="Entry title (optional)" />
+        <div class="tagbox">
+          <span class="muted">#</span>
+          <input id="tags" type="text" placeholder="tags, comma-separated (optional)" />
+        </div>
+      </div>
+      <textarea id="body" placeholder="Write your narrative…"></textarea>
+      <div class="row" style="margin-top:10px">
+        <div class="counts muted" id="counts">0 words · 0 chars</div>
+        <div class="grow"></div>
+        <button id="save">Save (⌘/Ctrl+S)</button>
+        <button id="exportTxt">Export TXT</button>
+        <button id="exportMd">Export MD</button>
+        <button class="ghost" id="clearDraft">Clear Draft</button>
+      </div>
+      <div class="hr"></div>
+      <div class="notice muted">
+        Drafts auto-save locally every couple seconds. Saved entries appear below.
+      </div>
+    </section>
+
+    <section class="timeline" id="timeline" aria-label="Saved entries"></section>
+  </div>
+
+  <script>
+    // ---- Utilities
+    const $ = sel => document.querySelector(sel);
+    const fmtDate = (d)=>{
+      const dt = new Date(d);
+      const pad = n => String(n).padStart(2,'0');
+      return dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate())+' '+pad(dt.getHours())+':'+pad(dt.getMinutes());
+    };
+    const fileDownload = (name, text)=>{
+      const blob = new Blob([text], {type: 'text/plain;charset=utf-8'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+    };
+
+    // ---- Theme
+    const THEME_KEY = 'narrative.theme';
+    const setTheme = (t)=>{
+      document.documentElement.setAttribute('data-theme', t);
+      $('#themeBtn').textContent = 'Theme: ' + (t === 'blue' ? 'Blue' : 'Light');
+      localStorage.setItem(THEME_KEY, t);
+    };
+    (function initTheme(){
+      const saved = localStorage.getItem(THEME_KEY) || 'light';
+      setTheme(saved);
+      $('#themeBtn').addEventListener('click', ()=>{
+        setTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'blue' : 'light');
+      });
+    })();
+
+    // ---- State
+    const DRAFT_KEY = 'narrative.draft.v1';
+    const ENTRIES_KEY = 'narrative.entries.v1';
+    const UI_KEY = 'narrative.ui.v1';
+
+    const state = {
+      draft: {title:'', tags:'', body:''},
+      entries: []
+    };
+
+    // UI state (collapse/expand) persisted locally
+    const ui = {
+      expanded: new Set(),   // entry IDs that are expanded
+      allCollapsed: false    // if true, all entries are collapsed regardless of expanded set
+    };
+
+    const loadUI = ()=>{
+      try{
+        const saved = JSON.parse(localStorage.getItem(UI_KEY) || 'null');
+        if(saved && typeof saved === 'object'){
+          ui.allCollapsed = !!saved.allCollapsed;
+          ui.expanded = new Set(Array.isArray(saved.expanded) ? saved.expanded : []);
+        }
+      }catch{}
+    };
+    const saveUI = ()=>{
+      localStorage.setItem(UI_KEY, JSON.stringify({
+        allCollapsed: ui.allCollapsed,
+        expanded: Array.from(ui.expanded)
+      }));
+    };
+
+
+    const load = ()=>{
+      loadUI();
+      try{
+        const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+        if(d) state.draft = d;
+      }catch{}
+      try{
+        const e = JSON.parse(localStorage.getItem(ENTRIES_KEY) || '[]');
+        if(Array.isArray(e)) state.entries = e;
+      }catch{}
+    };
+    const saveDraft = ()=>{
+      state.draft = { title: $('#title').value.trim(), tags: $('#tags').value.trim(), body: $('#body').value };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(state.draft));
+    };
+    const saveEntries = ()=> localStorage.setItem(ENTRIES_KEY, JSON.stringify(state.entries));
+
+    // ---- Render
+    const renderCounts = ()=>{
+      const text = $('#body').value;
+      const words = (text.trim().match(/\S+/g) || []).length;
+      $('#counts').textContent = `${words} word${words===1?'':'s'} · ${text.length} char${text.length===1?'':'s'}`;
+    };
+
+    const escapeHtml = (s)=> s.replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+
+    const renderTimeline = ()=>{
+      const tl = $('#timeline');
+      if(!state.entries.length){
+        tl.innerHTML = `<div class="muted">No entries yet. Write something and press <b>Save</b>.</div>`;
+        return;
+      }
+      const items = [...state.entries].sort((a,b)=> b.created - a.created).map((e,idx)=>{
+        const tags = e.tags ? e.tags.split(',').map(t=>t.trim()).filter(Boolean) : [];
+        const tagsHtml = tags.length ? `<span class="muted"> · ${tags.map(t=>'#'+t).join(' ')}</span>` : '';
+        const id = `entry-${e.id}`;
+        const expanded = ui.allCollapsed ? false : (ui.expanded.size ? ui.expanded.has(e.id) : idx === 0);
+        const collapsedClass = expanded ? '' : ' collapsed';
+        const caret = expanded ? '▼' : '▶';
+        return `
+          <article class="card entry${collapsedClass}" id="${id}">
+            <div class="entry-header">
+              <div class="entry-main">
+                <h3>${e.title || 'Untitled entry'}</h3>
+                <div class="meta">${fmtDate(e.created)}${tagsHtml}</div>
+              </div>
+              <button class="collapseBtn" data-id="${e.id}" title="Collapse / expand entry">${caret}</button>
+            </div>
+            <div class="content">${escapeHtml(e.body)}</div>
+            <div class="actions">
+              <button data-act="edit" data-id="${e.id}">Edit</button>
+              <button data-act="delete" data-id="${e.id}">Delete</button>
+              <button data-act="exportTxt" data-id="${e.id}">Export TXT</button>
+              <button data-act="exportMd" data-id="${e.id}">Export MD</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+      tl.innerHTML = items;
+
+      // Entry action buttons (edit/delete/export)
+      tl.querySelectorAll('button[data-act]').forEach(btn=>{
+        btn.addEventListener('click', onEntryAction);
+      });
+
+      // New: collapse / expand buttons
+      tl.querySelectorAll('.collapseBtn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const id = btn.getAttribute('data-id');
+          const article = document.getElementById('entry-'+id);
+          if(!article) return;
+          const isCollapsed = article.classList.toggle('collapsed');
+          btn.textContent = isCollapsed ? '▶' : '▼';
+          ui.allCollapsed = false;
+          if(isCollapsed) ui.expanded.delete(id); else ui.expanded.add(id);
+          saveUI();
+        });
+      });
+    };
+
+    // ---- Actions
+    const onSave = ()=>{
+      const title = $('#title').value.trim();
+      const tags  = $('#tags').value.trim();
+      const body  = $('#body').value;
+      if(!body.trim()){ alert('Nothing to save yet.'); return; }
+      const entry = {
+        id: crypto.randomUUID(),
+        title, tags, body,
+        created: Date.now(),
+        updated: Date.now()
+      };
+      state.entries.push(entry);
+      saveEntries();
+      ui.allCollapsed = false;
+      ui.expanded = new Set([entry.id]);
+      saveUI();
+      // Clear draft & inputs
+      state.draft = {title:'', tags:'', body:''};
+      $('#title').value=''; $('#tags').value=''; $('#body').value='';
+      saveDraft();
+      renderCounts();
+      renderTimeline();
+    };
+
+    const onEntryAction = (e)=>{
+      const act = e.currentTarget.getAttribute('data-act');
+      const id  = e.currentTarget.getAttribute('data-id');
+      const idx = state.entries.findIndex(x=>x.id===id);
+      if(idx<0) return;
+
+      const entry = state.entries[idx];
+      if(act==='delete'){
+        if(confirm('Delete this entry?')){
+          state.entries.splice(idx,1);
+          ui.expanded.delete(id);
+          saveEntries();
+          saveUI();
+          renderTimeline();
+        }
+      }else if(act==='edit'){
+        // Load into draft/editor
+        $('#title').value = entry.title || '';
+        $('#tags').value  = entry.tags  || '';
+        $('#body').value  = entry.body  || '';
+        renderCounts();
+        saveDraft();
+        // Optionally remove old entry so re-saving creates a new timestamp
+        if(confirm('Remove the old copy after loading to editor? (OK = remove)')){
+          state.entries.splice(idx,1);
+          ui.expanded.delete(id);
+          saveEntries();
+          saveUI();
+          renderTimeline();
+        }
+        window.scrollTo({top:0, behavior:'smooth'});
+      }else if(act==='exportTxt'){
+        fileDownload(safeName(entry.title || 'entry')+'.txt', entry.body);
+      }else if(act==='exportMd'){
+        const md = `# ${entry.title || 'Untitled entry'}\n\n_Date: ${fmtDate(entry.created)}_\n\n${entry.body}\n`;
+        fileDownload(safeName(entry.title || 'entry')+'.md', md);
+      }
+    };
+
+    const safeName = (s)=> s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+
+    // ---- Export all
+    const exportAll = (asMd=false)=>{
+      if(!state.entries.length){ alert('No entries to export.'); return; }
+      const sorted = [...state.entries].sort((a,b)=> a.created - b.created);
+      let out = '';
+      if(asMd){
+        out = sorted.map(e=>`# ${e.title || 'Untitled entry'}\n\n_Date: ${fmtDate(e.created)}_\n${e.tags?`\n_Tags: ${e.tags}_\n`:''}\n${e.body}\n`).join('\n---\n\n');
+      }else{
+        out = sorted.map(e=>`${fmtDate(e.created)}  |  ${e.title || 'Untitled entry'}${e.tags?`  |  #${e.tags}`:''}\n\n${e.body}\n\n-----\n`).join('\n');
+      }
+      fileDownload('narrative-journal.'+(asMd?'md':'txt'), out);
+    };
+
+    // ---- Draft & events
+    const bind = ()=>{
+      $('#save').addEventListener('click', onSave);
+      $('#exportTxt').addEventListener('click', ()=> fileDownload(safeName($('#title').value||'entry')+'.txt', $('#body').value));
+      $('#exportMd').addEventListener('click', ()=>{
+        const md = `# ${$('#title').value || 'Untitled entry'}\n\n_Date: ${fmtDate(Date.now())}_\n\n${$('#body').value}\n`;
+        fileDownload(safeName($('#title').value||'entry')+'.md', md);
+      });
+      $('#exportAllTxt').addEventListener('click', ()=> exportAll(false));
+      $('#exportAllMd').addEventListener('click', ()=> exportAll(true));
+      $('#expandAll').addEventListener('click', ()=>{
+        ui.allCollapsed = false;
+        ui.expanded = new Set(state.entries.map(x=>x.id));
+        saveUI();
+        renderTimeline();
+      });
+      $('#collapseAll').addEventListener('click', ()=>{
+        ui.allCollapsed = true;
+        ui.expanded = new Set();
+        saveUI();
+        renderTimeline();
+      });
+      $('#printPdf').addEventListener('click', ()=> window.print());
+      $('#clearDraft').addEventListener('click', ()=>{
+        if(confirm('Clear the editor draft?')){
+          $('#title').value=''; $('#tags').value=''; $('#body').value='';
+          renderCounts(); saveDraft();
+        }
+      });
+
+      // Autosave draft
+      ['input','keyup','change'].forEach(ev=>{
+        $('#title').addEventListener(ev, saveDraft);
+        $('#tags').addEventListener(ev, saveDraft);
+        $('#body').addEventListener(ev, ()=>{ saveDraft(); renderCounts(); });
+      });
+      setInterval(saveDraft, 2000);
+
+      // Keyboard: Save with Ctrl/Cmd+S
+      document.addEventListener('keydown', (e)=>{
+        if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){
+          e.preventDefault(); onSave();
+        }
+      });
+    };
+
+    // ---- Init
+    (function init(){
+      load();
+      $('#title').value = state.draft.title || '';
+      $('#tags').value  = state.draft.tags  || '';
+      $('#body').value  = state.draft.body  || '';
+      renderCounts();
+      renderTimeline();
+      bind();
+    })();
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js");
+}
+</script>
+
+</body>
+</html>
