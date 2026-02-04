@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Narrative Journal</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b1b3d">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <style>
+    :root{
+      /* Rugged (Blue) defaults */
+      --bg:#0b1b3d;
+      --panel:#0f172a;
+      --card:#020617;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --border:#1f2937;
+      --accent:#60a5fa;
+
+      --g-night: radial-gradient(circle at top, #020617 0, #020617 45%, #000000 90%);
+      --g-dawn:  radial-gradient(circle at top, #1e293b 0, #0b1b3d 45%, #020617 90%);
+
+      --shadow:0 14px 30px rgba(15,23,42,.35);
+      --radius:20px;
+      --radius2:16px;
+
+      --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    html[data-theme="light"]{
+      --bg:#e5f0ff;
+      --panel:#ffffff;
+      --card:#f1f5f9;
+      --text:#0f172a;
+      --muted:#64748b;
+      --border:#cbd5e1;
+      --accent:#2563eb;
+
+      --g-night: radial-gradient(circle at top, #020617 0, #020617 45%, #020617 90%);
+      --g-dawn:  radial-gradient(circle at top, #dbeafe 0, #e5f0ff 45%, #e2e8f0 90%);
+
+      --shadow:0 14px 30px rgba(15,23,42,.18);
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--font);
+      color:var(--text);
+      background:var(--g-dawn);
+      padding:16px;
+      transition:background .6s ease;
+      line-height:1.5;
+    }
+
+    .shell{max-width:980px;margin:0 auto}
+    .frame{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:16px 18px 18px;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:10px;
+    }
+    h1{
+      margin:0;
+      font-size:1.15rem;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .sub{
+      margin-top:3px;
+      font-size:.82rem;
+      color:var(--muted);
+    }
+
+    /* Theme toggle = "chip" style (keeps same #themeBtn id to avoid breaking JS) */
+    #themeBtn{
+      appearance:none;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:var(--card);
+      color:var(--muted);
+      padding:8px 12px;
+      font-size:.78rem;
+      font-weight:700;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    #themeBtn:hover{filter:brightness(1.03)}
+
+    /* Action bar (horizontal swipe chips) */
+    .seg{
+      display:flex;
+      gap:8px;
+      padding:8px;
+      border-radius:16px;
+      border:1px solid var(--border);
+      background: rgba(15,23,42,.9);
+      overflow-x:auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      margin:6px 0 12px;
+    }
+    html[data-theme="light"] .seg{background:rgba(255,255,255,.95)}
+    .seg::-webkit-scrollbar{display:none}
+
+    .seg button{
+      flex:0 0 auto;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size:.9rem;
+      cursor:pointer;
+      font-family:inherit;
+      font-weight:700;
+      white-space:nowrap;
+    }
+    .seg button.primary{
+      background:var(--accent);
+      border-color:transparent;
+      color:#fff;
+    }
+    .seg button.ghost{background:transparent}
+    .seg .hint{
+      flex:0 0 auto;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:0 10px;
+      color:var(--muted);
+      font-size:.78rem;
+      white-space:nowrap;
+      opacity:.85;
+    }
+
+    /* Cards */
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius2);
+      padding:12px 12px 13px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:12px;
+    }
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+    .label{
+      font-size:.78rem;
+      color:var(--muted);
+      margin-bottom:4px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .hr{height:1px;background:rgba(148,163,184,.28);margin:10px 0;border-radius:999px}
+
+    input[type="text"], textarea{
+      width:100%;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:var(--panel);
+      color:var(--text);
+      padding:12px 14px;
+      font-size:16px;
+      font-family:inherit;
+    }
+    input::placeholder, textarea::placeholder{color:var(--muted)}
+    textarea{
+      min-height:300px;
+      resize:vertical;
+      font-family:var(--mono);
+      line-height:1.6;
+    }
+
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+    .grow{flex:1}
+    .muted{color:var(--muted); font-size:12px}
+    .counts{display:flex; gap:12px; font-variant-numeric:tabular-nums; font-family:var(--mono);}
+
+    .timeline{margin-top:12px; display:flex; flex-direction:column; gap:12px}
+    .entry{padding:14px}
+    .entry h3{margin:0 0 4px 0; font-size:16px}
+    .entry .meta{font-size:12px; color:var(--muted)}
+    .entry .content{white-space:pre-wrap; margin-top:8px; font-family:var(--mono)}
+    .entry .actions{margin-top:10px; display:flex; gap:8px; flex-wrap:wrap}
+
+    .tagbox{display:flex; gap:8px; align-items:center}
+    .tagbox input{max-width:260px}
+
+    .notice{
+      padding:10px 12px;
+      border:1px dashed rgba(148,163,184,.35);
+      border-radius:14px;
+      font-size:13px;
+      color:var(--muted);
+      background: rgba(2,6,23,.22);
+    }
+    html[data-theme="light"] .notice{background: rgba(241,245,249,.85)}
+
+    /* Collapsible entries */
+    .entry-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:8px;
+    }
+    .entry-main{min-width:0}
+    .collapseBtn{
+      padding:6px 10px;
+      font-size:12px;
+      border-radius:999px;
+    }
+    .entry.collapsed .content,
+    .entry.collapsed .actions{display:none}
+
+    /* Footer */
+    .footer{
+      margin-top:12px;
+      padding-top:10px;
+      border-top:1px solid rgba(148,163,184,.28);
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      gap:8px;
+      font-size:.78rem;
+      color:var(--muted);
+    }
+    .footer strong{color:var(--text);font-weight:750}
+  </style>
+</head>
+
+<body>
+  <div class="shell">
+    <div class="frame">
+      <header>
+        <div>
+          <h1>Narrative Journal</h1>
+          <div class="sub">Draft autosave • Local entries • Export TXT/MD • Print/PDF • Collapse/expand timeline</div>
+        </div>
+        <button id="themeBtn" title="Toggle Light / Blue">Theme: Light</button>
+      </header>
+
+      <!-- ACTION BAR -->
+      <nav class="seg" aria-label="Actions">
+        <button class="ghost" id="expandAll" type="button">Expand All</button>
+        <button class="ghost" id="collapseAll" type="button">Collapse All</button>
+        <button class="primary" id="exportAllTxt" type="button">Export All (TXT)</button>
+        <button class="primary" id="exportAllMd" type="button">Export All (MD)</button>
+        <button class="ghost" id="printPdf" type="button">Print / PDF</button>
+        <span class="hint">Swipe ➜</span>
+      </nav>
+
+      <div class="grid">
+        <!-- LEFT: EDITOR -->
+        <section class="card editor" aria-label="Editor">
+          <div class="label">Editor</div>
+
+          <div class="row" style="margin-bottom:8px">
+            <input id="title" type="text" placeholder="Entry title (optional)" />
+            <div class="tagbox">
+              <span class="muted">#</span>
+              <input id="tags" type="text" placeholder="tags, comma-separated (optional)" />
+            </div>
+          </div>
+
+          <textarea id="body" placeholder="Write your narrative…"></textarea>
+
+          <div class="row" style="margin-top:10px">
+            <div class="counts muted" id="counts">0 words · 0 chars</div>
+            <div class="grow"></div>
+            <button class="primary" id="save" type="button">Save (⌘/Ctrl+S)</button>
+            <button id="exportTxt" type="button">Export TXT</button>
+            <button id="exportMd" type="button">Export MD</button>
+            <button class="ghost" id="clearDraft" type="button">Clear Draft</button>
+          </div>
+
+          <div class="hr"></div>
+          <div class="notice">
+            Drafts auto-save locally every couple seconds. Saved entries appear to the right / below.
+          </div>
+        </section>
+
+        <!-- RIGHT: TIMELINE -->
+        <section class="card" aria-label="Saved entries">
+          <div class="label">Timeline</div>
+          <section class="timeline" id="timeline" aria-label="Saved entries"></section>
+        </section>
+      </div>
+
+      <div class="footer">
+        <div><strong>Narrative Journal</strong> · PWA build · local-first</div>
+        <div>Tip: Add to Home Screen for app mode</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---- Utilities
+    const $ = sel => document.querySelector(sel);
+    const fmtDate = (d)=>{
+      const dt = new Date(d);
+      const pad = n => String(n).padStart(2,'0');
+      return dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate())+' '+pad(dt.getHours())+':'+pad(dt.getMinutes());
+    };
+    const fileDownload = (name, text)=>{
+      const blob = new Blob([text], {type: 'text/plain;charset=utf-8'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+    };
+
+    // ---- Theme
+    const THEME_KEY = 'narrative.theme';
+    const setTheme = (t)=>{
+      document.documentElement.setAttribute('data-theme', t);
+      $('#themeBtn').textContent = 'Theme: ' + (t === 'blue' ? 'Blue' : 'Light');
+      localStorage.setItem(THEME_KEY, t);
+      // keep background in sync with theme
+      document.body.style.background = getComputedStyle(document.documentElement).getPropertyValue('--g-dawn');
+    };
+    (function initTheme(){
+      const saved = localStorage.getItem(THEME_KEY) || 'light';
+      setTheme(saved);
+      $('#themeBtn').addEventListener('click', ()=>{
+        setTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'blue' : 'light');
+      });
+    })();
+
+    // ---- State
+    const DRAFT_KEY = 'narrative.draft.v1';
+    const ENTRIES_KEY = 'narrative.entries.v1';
+    const UI_KEY = 'narrative.ui.v1';
+
+    const state = {
+      draft: {title:'', tags:'', body:''},
+      entries: []
+    };
+
+    // UI state (collapse/expand) persisted locally
+    const ui = {
+      expanded: new Set(),   // entry IDs that are expanded
+      allCollapsed: false    // if true, all entries are collapsed regardless of expanded set
+    };
+
+    const loadUI = ()=>{
+      try{
+        const saved = JSON.parse(localStorage.getItem(UI_KEY) || 'null');
+        if(saved && typeof saved === 'object'){
+          ui.allCollapsed = !!saved.allCollapsed;
+          ui.expanded = new Set(Array.isArray(saved.expanded) ? saved.expanded : []);
+        }
+      }catch{}
+    };
+    const saveUI = ()=>{
+      localStorage.setItem(UI_KEY, JSON.stringify({
+        allCollapsed: ui.allCollapsed,
+        expanded: Array.from(ui.expanded)
+      }));
+    };
+
+    const load = ()=>{
+      loadUI();
+      try{
+        const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+        if(d) state.draft = d;
+      }catch{}
+      try{
+        const e = JSON.parse(localStorage.getItem(ENTRIES_KEY) || '[]');
+        if(Array.isArray(e)) state.entries = e;
+      }catch{}
+    };
+    const saveDraft = ()=>{
+      state.draft = { title: $('#title').value.trim(), tags: $('#tags').value.trim(), body: $('#body').value };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(state.draft));
+    };
+    const saveEntries = ()=> localStorage.setItem(ENTRIES_KEY, JSON.stringify(state.entries));
+
+    // ---- Render
+    const renderCounts = ()=>{
+      const text = $('#body').value;
+      const words = (text.trim().match(/\S+/g) || []).length;
+      $('#counts').textContent = `${words} word${words===1?'':'s'} · ${text.length} char${text.length===1?'':'s'}`;
+    };
+
+    const escapeHtml = (s)=> s.replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+
+    const renderTimeline = ()=>{
+      const tl = $('#timeline');
+      if(!state.entries.length){
+        tl.innerHTML = `<div class="muted">No entries yet. Write something and press <b>Save</b>.</div>`;
+        return;
+      }
+      const items = [...state.entries].sort((a,b)=> b.created - a.created).map((e,idx)=>{
+        const tags = e.tags ? e.tags.split(',').map(t=>t.trim()).filter(Boolean) : [];
+        const tagsHtml = tags.length ? `<span class="muted"> · ${tags.map(t=>'#'+t).join(' ')}</span>` : '';
+        const id = `entry-${e.id}`;
+        const expanded = ui.allCollapsed ? false : (ui.expanded.size ? ui.expanded.has(e.id) : idx === 0);
+        const collapsedClass = expanded ? '' : ' collapsed';
+        const caret = expanded ? '▼' : '▶';
+        return `
+          <article class="card entry${collapsedClass}" id="${id}">
+            <div class="entry-header">
+              <div class="entry-main">
+                <h3>${e.title || 'Untitled entry'}</h3>
+                <div class="meta">${fmtDate(e.created)}${tagsHtml}</div>
+              </div>
+              <button class="collapseBtn" data-id="${e.id}" type="button" title="Collapse / expand entry">${caret}</button>
+            </div>
+            <div class="content">${escapeHtml(e.body)}</div>
+            <div class="actions">
+              <button data-act="edit" data-id="${e.id}" type="button">Edit</button>
+              <button data-act="delete" data-id="${e.id}" type="button">Delete</button>
+              <button data-act="exportTxt" data-id="${e.id}" type="button">Export TXT</button>
+              <button data-act="exportMd" data-id="${e.id}" type="button">Export MD</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+      tl.innerHTML = items;
+
+      // Entry action buttons (edit/delete/export)
+      tl.querySelectorAll('button[data-act]').forEach(btn=>{
+        btn.addEventListener('click', onEntryAction);
+      });
+
+      // Collapse / expand buttons
+      tl.querySelectorAll('.collapseBtn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const id = btn.getAttribute('data-id');
+          const article = document.getElementById('entry-'+id);
+          if(!article) return;
+          const isCollapsed = article.classList.toggle('collapsed');
+          btn.textContent = isCollapsed ? '▶' : '▼';
+          ui.allCollapsed = false;
+          if(isCollapsed) ui.expanded.delete(id); else ui.expanded.add(id);
+          saveUI();
+        });
+      });
+    };
+
+    // ---- Actions
+    const onSave = ()=>{
+      const title = $('#title').value.trim();
+      const tags  = $('#tags').value.trim();
+      const body  = $('#body').value;
+      if(!body.trim()){ alert('Nothing to save yet.'); return; }
+      const entry = {
+        id: crypto.randomUUID(),
+        title, tags, body,
+        created: Date.now(),
+        updated: Date.now()
+      };
+      state.entries.push(entry);
+      saveEntries();
+      ui.allCollapsed = false;
+      ui.expanded = new Set([entry.id]);
+      saveUI();
+
+      // Clear draft & inputs
+      state.draft = {title:'', tags:'', body:''};
+      $('#title').value=''; $('#tags').value=''; $('#body').value='';
+      saveDraft();
+      renderCounts();
+      renderTimeline();
+    };
+
+    const onEntryAction = (e)=>{
+      const act = e.currentTarget.getAttribute('data-act');
+      const id  = e.currentTarget.getAttribute('data-id');
+      const idx = state.entries.findIndex(x=>x.id===id);
+      if(idx<0) return;
+
+      const entry = state.entries[idx];
+      if(act==='delete'){
+        if(confirm('Delete this entry?')){
+          state.entries.splice(idx,1);
+          ui.expanded.delete(id);
+          saveEntries();
+          saveUI();
+          renderTimeline();
+        }
+      }else if(act==='edit'){
+        // Load into draft/editor
+        $('#title').value = entry.title || '';
+        $('#tags').value  = entry.tags  || '';
+        $('#body').value  = entry.body  || '';
+        renderCounts();
+        saveDraft();
+        // Optionally remove old entry so re-saving creates a new timestamp
+        if(confirm('Remove the old copy after loading to editor? (OK = remove)')){
+          state.entries.splice(idx,1);
+          ui.expanded.delete(id);
+          saveEntries();
+          saveUI();
+          renderTimeline();
+        }
+        window.scrollTo({top:0, behavior:'smooth'});
+      }else if(act==='exportTxt'){
+        fileDownload(safeName(entry.title || 'entry')+'.txt', entry.body);
+      }else if(act==='exportMd'){
+        const md = `# ${entry.title || 'Untitled entry'}\n\n_Date: ${fmtDate(entry.created)}_\n\n${entry.body}\n`;
+        fileDownload(safeName(entry.title || 'entry')+'.md', md);
+      }
+    };
+
+    const safeName = (s)=> s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+
+    // ---- Export all
+    const exportAll = (asMd=false)=>{
+      if(!state.entries.length){ alert('No entries to export.'); return; }
+      const sorted = [...state.entries].sort((a,b)=> a.created - b.created);
+      let out = '';
+      if(asMd){
+        out = sorted.map(e=>`# ${e.title || 'Untitled entry'}\n\n_Date: ${fmtDate(e.created)}_\n${e.tags?`\n_Tags: ${e.tags}_\n`:''}\n${e.body}\n`).join('\n---\n\n');
+      }else{
+        out = sorted.map(e=>`${fmtDate(e.created)}  |  ${e.title || 'Untitled entry'}${e.tags?`  |  #${e.tags}`:''}\n\n${e.body}\n\n-----\n`).join('\n');
+      }
+      fileDownload('narrative-journal.'+(asMd?'md':'txt'), out);
+    };
+
+    // ---- Draft & events
+    const bind = ()=>{
+      $('#save').addEventListener('click', onSave);
+      $('#exportTxt').addEventListener('click', ()=> fileDownload(safeName($('#title').value||'entry')+'.txt', $('#body').value));
+      $('#exportMd').addEventListener('click', ()=>{
+        const md = `# ${$('#title').value || 'Untitled entry'}\n\n_Date: ${fmtDate(Date.now())}_\n\n${$('#body').value}\n`;
+        fileDownload(safeName($('#title').value||'entry')+'.md', md);
+      });
+      $('#exportAllTxt').addEventListener('click', ()=> exportAll(false));
+      $('#exportAllMd').addEventListener('click', ()=> exportAll(true));
+      $('#expandAll').addEventListener('click', ()=>{
+        ui.allCollapsed = false;
+        ui.expanded = new Set(state.entries.map(x=>x.id));
+        saveUI();
+        renderTimeline();
+      });
+      $('#collapseAll').addEventListener('click', ()=>{
+        ui.allCollapsed = true;
+        ui.expanded = new Set();
+        saveUI();
+        renderTimeline();
+      });
+      $('#printPdf').addEventListener('click', ()=> window.print());
+      $('#clearDraft').addEventListener('click', ()=>{
+        if(confirm('Clear the editor draft?')){
+          $('#title').value=''; $('#tags').value=''; $('#body').value='';
+          renderCounts(); saveDraft();
+        }
+      });
+
+      // Autosave draft
+      ['input','keyup','change'].forEach(ev=>{
+        $('#title').addEventListener(ev, saveDraft);
+        $('#tags').addEventListener(ev, saveDraft);
+        $('#body').addEventListener(ev, ()=>{ saveDraft(); renderCounts(); });
+      });
+      setInterval(saveDraft, 2000);
+
+      // Keyboard: Save with Ctrl/Cmd+S
+      document.addEventListener('keydown', (e)=>{
+        if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){
+          e.preventDefault(); onSave();
+        }
+      });
+    };
+
+    // ---- Init
+    (function init(){
+      load();
+      $('#title').value = state.draft.title || '';
+      $('#tags').value  = state.draft.tags  || '';
+      $('#body').value  = state.draft.body  || '';
+      renderCounts();
+      renderTimeline();
+      bind();
+    })();
+  </script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(()=>{});
+    }
+  </script>
+</body>
+</html>
